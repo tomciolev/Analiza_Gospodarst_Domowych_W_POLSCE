@@ -1,0 +1,381 @@
+---
+title: "Projekt1"
+author: "Tomasz Solarski"
+date: "4 01 2022"
+output: html_document
+---
+```{r setup, include=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(psych)
+library(gapminder)
+```
+# Część 1 - Zadania z ćwiczeń projektowych.
+
+## Ćw.1, Zadanie 9
+
+Stworzyć zmienną książki mówiącą o tym, ile dana osoba przeczytała książek w ostatnim kwartale. 
+```{r}
+ksiazki <- sample(0:4, size = 25, replace = TRUE)
+ksiazki
+```
+Ile wynosi średnia liczby przeczytanych książek?
+```{r}
+mean(ksiazki)
+```
+Ile osób przeczytało przynajmniej trzy książki?
+```{r}
+sum(ksiazki>=3)
+```
+Ile osób nie przeczytało żadnej książki?
+```{r}
+sum(ksiazki==0)
+```
+Stworzyć zmienną ksiazki2, która będzie mówiła o tym, czy ktoś czyta książki (przeczytał min. jedna). Uzyj do tego petli for.
+```{r}
+ksiazki2 <- c()
+for(element in ksiazki){
+  ksiazki2 <- c(ksiazki2, ifelse(element>=1, "czytajacy", "nieczytajacy"))
+}
+ksiazki
+ksiazki2
+```
+Stworzyć instrukcję warunkową, która mając datę (miesiąc i rok), odpowie na pytanie o liczbę dni w tym miesiącu.
+```{r}
+ileDni <- function(miesiac, rok){
+if(miesiac == 2){
+  if(rok%%4==0 && rok%%100!=0){
+    print(29)
+  }
+  else if(rok%%400==0){
+      print(29)
+    } 
+  else{
+      print(28)
+    }
+  }
+ else if(miesiac %in% c(1,3,5,7,8,10,12)){
+  print(31)
+} else{
+  print(30)
+}
+}
+ileDni(2,1900)
+ileDni(3,1900)
+ileDni(2,2020)
+ileDni(2,2100)
+```
+## Ćw.1, Zadanie 2,3
+```{r}
+osoby <- data.frame(wzrost = c(180,170,184,165,161,185,184),
+                    waga = c(80,70,76,67,80,71,65))
+osoby
+str(osoby)
+head(osoby,3)
+tail(osoby,5)
+dim(osoby)
+summary(osoby)
+```
+Wykorzystać funkcję rownames() do nadania imion obiektom w ramce osoby.
+```{r}
+row.names(osoby) <-  c("Tomek", "Janek", "Kuba", "Sebastian", "Marcin", "Zygmunt", "Stach")
+osoby
+```
+Stworzyć obiekt BMI, który bedzie przechowywał informacje o wartościach BMI (ang. body mass index)
+```{r}
+osoby$BMI <- osoby$waga/(osoby$wzrost/100)^2
+osoby
+```
+Wyświetl tylko te osoby, których BMI przyjmuje wartość wiekszą niż 30.
+```{r}
+osoby[osoby$BMI>30,]
+```
+Ile jest osób o BMI≤25?
+```{r}
+sum((osoby$BMI<=25)==T)
+```
+## Ćw.1, Zadanie 5
+
+W pakiecie psych istnieje funkcja describe(). Postaraj się, za jej pomocą, wyswietlić statytyski opisowe dla danych mtcars. Czym się ona różni od funkcji summary()?
+```{r}
+describe(mtcars)
+summary(mtcars)
+class(describe(mtcars))
+class(summary(mtcars))
+```
+Obie komendy pokazują bardzo podobne informacje. Funkcja describe() nie pokazuje kwartyli, ale pokazuje odchylenie standardowe, zakres oraz inne dodatkowe parametry. Desribe() jest w formie data.frame a summary() w formie table.
+
+Poznaj i zaproponuj sensowne wykorzystanie funkcji describeBy()
+```{r}
+describeBy(mtcars, mtcars$cyl)
+```
+Funkcja describeBy dzieli nasz zestaw na grupy - grupy to pomiary zmiennej grupującej, tzn. jezeli mamy zmienna grupującą - liczba cylindrów, która przyjmuje wartości 4,5,6 to describeBy dzieli nasz zestaw na 3 grupy 4,6,8. I pokazuje statystyki oddzielnie dla poszczególnych grup używając funkcji describe()
+
+## Ćw.2, Zadanie 10 na dwa sposoby
+
+Na jednym wykresie liniowym narysować, jak w rozważanych latach zmieniała się oczekiwana długość życia w trzech wybranych przez Ciebie krajach.
+
+1 sposób:
+```{r}
+dane <- gapminder %>%
+  filter(country %in% c("Poland", "China", "Canada")) %>%
+  select(country, lifeExp, year) %>%
+  spread(country, lifeExp)
+dane
+plot(dane$year, dane$Canada, type = "l", ylim = c(30,80))
+lines(dane$year, dane$China, type = "l", col ="blue")
+lines(dane$year, dane$Poland, type = "l", col ="red")
+legend("bottomright",c("Canada", "China", "Poland"),lty = 1, col = c("black", "blue", "red"))
+```
+
+2 sposób:
+
+W tym przypadku dzięki bibliotece reshape2, przekształcam dane do postaci długiej i rysuje wykres dla 3 różnych kontynentów jedną komendą używając biblioteki ggplot2.
+```{r}
+library(reshape2)
+dane_long <- melt(dane, id.vars = "year")
+dane_long
+ggplot(dane_long, aes(x = year, y = value, col = variable)) +
+  labs(col = "Kraj", x = "Rok", y = "Oczekiwana długość zycia", title = "Oczekiwana długość zycia na przestrzeni lat") +
+  geom_line()
+```
+
+## Ćw.2, Zadanie 7
+
+Wyznaczyć podstawowe statystyki opisowe dot. wielkości populacji na różnych kontynentach w roku 2007. Pamiętaj o wykorzystaniu funkcji group_by() i summarize().
+```{r}
+gapminder %>%
+  filter(year == 2007) %>%
+  mutate(pop = pop/1000000) %>%
+  group_by(continent) %>%
+  summarize(śr_pop = mean(pop), suma_pop = sum(pop), odchyl_pop = sd(pop), min_pop = min(pop), max_pop = max(pop))
+```
+# Część 2 - Analiza problemów badawczych.
+
+## Zapoznanie się z danymi.
+
+Wczytywanie danych.
+```{r wczytywanie}
+budzety2005 <- read.csv("budzety2005.csv", row.names=1)
+```
+Zerknięcie na dane
+```{r }
+glimpse(budzety2005)
+```
+Wybieram tylko interesujące mnie cechy.
+```{r}
+dane <- budzety2005 %>% 
+  select(pozycja = reltohoh, miesiac = month_hh,
+         wielkosc_miasta = townsize, wojewodztwo = wojregion,
+         zawod = mainincHH, wiek_glowy = ageofhead,
+         wielkosc_farmy = farmsize, typ_mieszkania = buildtype,
+         wielkosc_mieszkania = flatsize, wlasnosc_mieszkania = owntype,
+         rachunki = bills, dochod_rodziny = totincGUS, wydatki_rodziny = totexpGUS, 
+         dochod = totinc_data, liczba_osob = numpHH, plec = sex, wiek = age,
+         malzonek = married, edukacja = educ)
+```
+Ponowne zerknięcie. Poprawienie kolumny "pozycja", która zaczyna się spacją.
+```{r include = F}
+glimpse(dane)
+summary(dane)
+dane$pozycja <- gsub("\\s", "", dane$pozycja)  
+```
+Poznanie wszystkich unikalnych wartości z kolumn kategorycznych oraz zamiana cechy wielkosc_miasta na factor.
+```{r }
+dane %>%
+  select(where(is.character)) %>%
+    lapply(unique)
+dane$wielkosc_miasta <- factor(dane$wielkosc_miasta)
+levels(dane$wielkosc_miasta) <- c('village', '<20k', '20k-100k', '100k-200k', '200k-500k', '>500k')
+```
+## Czy wielkość miasta, w którym mieszkamy wpływa na naszą edukację?
+
+Biorę pod uwagę tylko osoby, które już mogły ukończyć studia, czyli w wieku 25 lat i więcej.
+
+Tutaj dodatkowo zainteresowałem się tym jaki jest średni wiek osób z daną edukacją.
+```{r}
+d3 <- dane %>% 
+  filter(wiek>25) %>%
+  group_by(edukacja) %>%
+  summarize(n = n(), sr_wiek = mean(wiek)) %>%
+  mutate(procent = round((n/(sum(n))),2)) %>%
+  select(-n)
+d3
+```
+Jak widać, im osoby są starsze mają niższe wykształcenie. Może być to spowodowane tym, że w wcześniejszych latach dostęp do uniwersytetów był bardziej ograniczony.
+```{r}
+d3 %>% 
+  ggplot(aes(x=edukacja, y=procent)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Wykształcenie społeczeństwa powyżej 24 roku życia")
+```
+
+W naszym kraju zaledwie 1% całego społeczeństwa powyżej 25 roku życia nie posiada żadnej edukacji.Najwięcej osób, bo 33% jest po szkole średniej, a po uczelni wyższej 18%. Osoby przuczające się do zawodu stanowią 28%.
+```{r}
+d1 <- dane %>%
+  filter(wiek>25) %>%
+  select(wielkosc_miasta, edukacja) %>% 
+  group_by(wielkosc_miasta, edukacja) %>%
+  summarize(n = n())
+```
+
+```{r}
+d1 %>%
+  ggplot(aes(fill=edukacja, x=wielkosc_miasta, y=n)) +
+  geom_bar(position="fill", stat="identity") +
+  ggtitle("Wykształcenie społeczeństwa powyżej
+  25 roku życia zależnie od wielkości miasta")
+```
+```{r}
+d2 <- d1 %>% 
+  group_by(wielkosc_miasta) %>%
+  mutate(pr = round(n/sum(n),2)) %>%
+  select(-n)
+```
+```{r}
+d2 %>%
+  top_n(3,pr) %>%
+  arrange(wielkosc_miasta, desc(pr))
+```
+Na wykresie i w tabeli powyżej widać, że we wsi oraz w miastach mniejszych niż 500 000 najczęściej wybieranym poziomem edukacji jest szkoła średnia, a w miastach większych niż 500 000 mieszkańców szkoła podstawowa.
+```{r}
+d2 %>% 
+  top_n(-2,pr)
+```
+Z tabeli powyżej można dowiedzieć się, że dla  każdego poziomu miasta najmniej osób nie ma żadnej edukacji. Co ciekawe w dużych miastach (powyżej 200 000) kolejno najrzadziej osoby wybierają się na uczelnie wyższą, a na wsi najrzadziej kończą edukację na szkole podstawowej.
+
+## Czy wielkość miasta, w którym mieszkamy wpływa na to, że osoby powyzej 19 roku zycia mieszkaja z rodzicami? Jaki jest średni wiek osób mieszkających z rodzicami?
+```{r}
+d4 <- dane %>%
+  filter(pozycja == "son/daughter" , wiek > 19) %>%
+  select(wielkosc_miasta, wiek, dochod, edukacja, plec)
+d4 %>%
+  group_by(plec) %>%
+  summarize(n = n())
+```
+W Polsce liczba mężczyzn mieszkających z rodzicami jest większa o 36% od liczby kobiet mieszkających z rodzicami.
+```{r}
+dane %>%
+  filter(wiek > 19) %>%
+  group_by(pozycja, wielkosc_miasta) %>%
+  summarize(n = n(), sr_wieku = mean(wiek)) %>%
+  group_by(wielkosc_miasta) %>%
+  mutate(procent = round(n/sum(n),2)) %>%
+  arrange(desc(wielkosc_miasta)) %>%
+  filter(pozycja == "son/daughter") %>%
+  select(-n)
+```
+Jak widać w kolumnie procent pokazane jest ile procent społeczeństwa danej wielkości miasta zajmują osoby w wieku większym niż 19 lat mieszkające z rodzicami. Jest to około 12 procent dla każdego z przedziałów ludności miast. Średnia wieku dla tych osób dla każdej z wielkości miasta jest równa około 27 lat. 
+```{r}
+d <- dane %>%
+  filter(wiek > 19, pozycja == "son/daughter") 
+boxplot(d$wiek~d$wielkosc_miasta,
+        main="Wielkosc miasta a wiek osób mieszkających z rodzicami",
+        xlab="Wielkość miasta",
+        ylab="Wiek",) 
+```
+
+## Czy dochód ma jakieś znaczenie przy mieszkaniu z rodzicami? Czy im mniejszy dochód tym więcej osób mieszka z rodzicami?
+
+```{r}
+boxplot(d4$dochod)
+```
+
+
+Z tego wykresu pudełkowego wiem, że bardzo dużo osób ma dochód równy 0 zł.
+```{r}
+l0 <- sum(d4$dochod == 0)
+round(sum(d4$dochod == 0) / (sum(d4$dochod != 0) + sum(d4$dochod == 0)) * 100,2)
+l1 <- sum(d4$dochod >= 3000)
+round(sum(d4$dochod >= 3000) / (sum(d4$dochod > 3000) + sum(d4$dochod <= 3000)) * 100,2)
+```
+Dochód równy 0 zł posiada 1341 osób. Jest to aż 47% osób mieszkających z rodzicami. Dochód większy niż 3000 zł posiada niecały 1% badanych.
+
+Usuwam wartości równe 0 zł i większe lub równe 3000 zł.
+```{r}
+d5 <- d4 %>%
+  filter(dochod != 0, dochod < 3000)
+summary(d5$dochod)
+boxplot(d5$dochod)
+```
+
+Podzielę te dane na 4 grupy. 
+```{r}
+range(d5$dochod)
+(max(d5$dochod) - min(d5$dochod))/4
+```
+Dodałem kolumnę z grupami, do których należą osoby mające określony dochód.
+```{r}
+d6 <- d5 %>% 
+  mutate(grupa = if_else(between(dochod,1,725), "1-725", if_else(between(dochod,726,1450),"726-1450", if_else(between(dochod,1451,2175),"1451-2175", "2176-2900"))))
+```
+```{r}
+d7 <- d6 %>% 
+  group_by(grupa) %>%
+  summarize(n = n()) %>%
+  add_row(grupa = c("0", "2900+"), n = c(l0,l1))
+d7$grupa <- factor(d7$grupa, levels = c("0","1-725","726-1450", "1451-2175","2176-2900","2900+"))
+d7 <- d7 %>%
+  arrange(grupa)
+d7
+```
+```{r}
+d7 %>%
+  ggplot(aes(x=grupa, y=n)) +
+  geom_bar(stat="identity") +
+  ggtitle("Dochód a liczba badanych osób mieszkających z rodzicami")
+```
+
+Hipoteza została potwierdzona: im niższy dochód ma dana osoba tym częściej mieszka z rodzicami. Najwięcej osób mieszkających z rodzicami ma dochód równy 0 zł. Tylko 6 osób zarabia powyżej 2900 zł i mieszka w domu rodzinnym. 
+
+## Czy typ mieszkania wpływają na wydatki?
+
+Wybieram dane i usuwam te wiersze, w których wielkość mieszkania jest równa 0.
+```{r}
+dane3 <- dane %>%
+  filter(pozycja == "head", wielkosc_mieszkania != 0) %>%
+  select(wielkosc_miasta, wojewodztwo, typ_mieszkania,wielkosc_mieszkania, liczba_osob, wydatki_rodziny)
+```
+```{r}
+dane3 %>%
+  select(typ_mieszkania, wielkosc_mieszkania) %>%
+  group_by(typ_mieszkania) %>%
+  summarize(srednia = mean(wielkosc_mieszkania))
+```
+Tabela powyżej przedstawia średnią wielkość poszczególnych typów lokali mieszkalnych w Polsce.
+```{r}
+dane3 %>%
+  select(typ_mieszkania, wielkosc_mieszkania, wydatki_rodziny) %>%
+  group_by(typ_mieszkania) %>%
+  summarize(sr_wydatki = mean(wydatki_rodziny))
+```
+Średnie wydatki rodziny największe są dla bliźniaków i szeregówek, a najniższe dla innych typów lokali mieszkalnych. Co ciekawe średnie wydatki dla mieszkania są niższe niż dla domu wolnostojącego.
+
+## Jakie są najczęściej wybierane lokale mieszkalne dla różnych wielkości miast oraz w ile osób ludzie najczęściej mieszkają.
+```{r}
+dane3 %>%
+  group_by(wielkosc_miasta, typ_mieszkania) %>%
+  summarize(n = n()) %>%
+  group_by(wielkosc_miasta) %>%
+  mutate(procent = round(n/sum(n),2)) %>%
+  top_n(3,n) %>%
+  arrange(wielkosc_miasta, desc(n))
+```
+W tabeli powyżej ukazane jest, że najczęściej wybieranym lokalem mieszkalnym jest mieszkanie, jedynie w miastach powyżej 500 000 mieszkańców najwięcej rodzin mieszka w domu wolnostojącym. 
+```{r}
+dane3 %>%
+  group_by(wielkosc_miasta, liczba_osob) %>%
+  summarize(n = sum(liczba_osob)) %>%
+  top_n(3,n) %>% 
+  arrange(wielkosc_miasta, desc(n))
+```
+W tabeli powyżej ukazane jest, że dla każdej wielkości miasta najbardziej popularne jest mieszkanie w 2 osoby. Wielkość miasta, w jakim mieszkamy nie wpływa na wielkość rodziny.
+
+
+
+
+
+
+
+
